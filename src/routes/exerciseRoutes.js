@@ -11,3 +11,5 @@ router.get("/", getExercises);
 router.get("/:id", getExerciseById);
 
 module.exports = router;
+
+router.post("/", createExercise);

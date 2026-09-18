@@ -38,7 +38,41 @@ const getExerciseById = async (req, res) => {
     }
 };
 
+const createExercise = async (req, res) => {
+    try {
+        const {
+            name,
+            description,
+            category,
+            muscle_group
+        } = req.body;
+
+        const [result] = await db.query(
+            `INSERT INTO exercises
+            (name, description, category, muscle_group)
+            VALUES (?, ?, ?, ?)`,
+            [
+                name,
+                description,
+                category,
+                muscle_group
+            ]
+        );
+
+        res.status(201).json({
+            message: "Ejercicio creado correctamente",
+            id: result.insertId
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            error: "Error al crear el ejercicio"
+        });
+    }
+};
+
 module.exports = {
     getExercises,
-    getExerciseById
+    getExerciseById,
+    createExercise
 };
