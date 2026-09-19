@@ -109,10 +109,24 @@ const updateProgress = async (id, userId, data) => {
   return result.affectedRows > 0;
 };
 
+const deleteProgress = async (id, userId) => {
+    const [result] = await pool.query(
+        `
+        DELETE FROM progress
+        WHERE id = ?
+          AND user_id = ?
+        `,
+        [id, userId]
+    );
+
+    return result.affectedRows > 0;
+};
+
 module.exports = {
   getAllProgress,
   getProgressById,
   workoutBelongsToUser,
   createProgress,
-  updateProgress
+  updateProgress,
+  deleteProgress
 };
