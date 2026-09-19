@@ -71,8 +71,53 @@ const createExercise = async (req, res) => {
     }
 };
 
+const updateExercise = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const {
+            name,
+            description,
+            category,
+            muscle_group
+        } = req.body;
+
+        const [result] = await db.query(
+            `UPDATE exercises
+             SET name = ?,
+                 description = ?,
+                 category = ?,
+                 muscle_group = ?
+             WHERE id = ?`,
+            [
+                name,
+                description,
+                category,
+                muscle_group,
+                id
+            ]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                error: "Ejercicio no encontrado"
+            });
+        }
+
+        res.status(200).json({
+            message: "Ejercicio actualizado correctamente"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            error: "Error al actualizar el ejercicio"
+        });
+    }
+};
+
 module.exports = {
     getExercises,
     getExerciseById,
-    createExercise
+    createExercise,
+    updateExercise
 };
