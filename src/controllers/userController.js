@@ -1,8 +1,36 @@
 const { getAllUsers, getUserById } = require("../models/userModel");
 
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const {
+  getAllUsers,
+  getUserById,
+  createUser,
+  getUserByEmail,
+  updateUser,
+  deleteUser,
+} = require("../models/userModel");
+
+const {
+  isValidId,
+  isValidEmail,
+  isValidPassword,
+} = require("../utils/validation");
+
 const getUsers = async (req, res) => {
   try {
-    const users = await getAllUsers();
+    const limit = req.query.limit ? Number(req.query.limit) : null;
+
+    const search = req.query.search ? req.query.search.trim() : "";
+
+    if (limit !== null && (!Number.isInteger(limit) || limit <= 0)) {
+      return res.status(400).json({
+        message: "El parámetro limit debe ser un entero positivo",
+      });
+    }
+
+    const users = await getAllUsers(limit, search);
 
     res.status(200).json(users);
   } catch (error) {
@@ -14,8 +42,43 @@ const getUsers = async (req, res) => {
   }
 };
 
+const getAllUsers = async (limit, search) => {
+  let sql = `
+        SELECT id, name, email, created_at
+        FROM users
+    `;
+
+  const values = [];
+
+  if (search) {
+    sql += `
+            WHERE name LIKE ?
+            OR email LIKE ?
+        `;
+
+    values.push(`%${search}%`, `%${search}%`);
+  }
+
+  sql += " ORDER BY id ASC";
+
+  if (limit !== null) {
+    sql += " LIMIT ?";
+    values.push(limit);
+  }
+
+  const [rows] = await pool.query(sql, values);
+
+  return rows;
+};
+
 const getUserByIdController = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
     const user = await getUserById(req.params.id);
 
     if (!user) {
@@ -44,14 +107,17 @@ const createUserController = async (req, res) => {
       });
     }
 
-    const existingUser = await getUserByEmail(email);
-
-    if (existingUser) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({
-        message: "El email ya está registrado",
+        message: "Email inválido",
       });
     }
 
+    if (!isValidPassword(password)) {
+      return res.status(400).json({
+        message: "La contraseña debe tener al menos 6 caracteres",
+      });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const id = await createUser(name, email, hashedPassword);
@@ -91,16 +157,6 @@ const deleteUser = (req, res) => {
   });
 };
 
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-
-const {
-  getAllUsers,
-  getUserById,
-  createUser,
-  getUserByEmail,
-} = require("../models/userModel");
-
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -110,6 +166,18 @@ const login = async (req, res) => {
         message: "Email y contraseña son obligatorios",
       });
     }
+
+    if (!isValidEmail(email)) {
+    return res.status(400).json({
+        message: "Email inválido"
+    });
+}
+
+if (!isValidPassword(password)) {
+    return res.status(400).json({
+        message: "La contraseña debe tener al menos 6 caracteres"
+    });
+}
 
     const user = await getUserByEmail(email);
 
@@ -153,6 +221,18 @@ const login = async (req, res) => {
 
 const updateUserController = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
+    if (Number(req.params.id) !== req.user.id) {
+      return res.status(403).json({
+        message: "No puede modificar otro usuario",
+      });
+    }
+
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
@@ -190,78 +270,98 @@ const updateUserController = async (req, res) => {
 };
 
 const partialUpdateUserController = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
-
-        if (
-            name === undefined &&
-            email === undefined &&
-            password === undefined
-        ) {
-            return res.status(400).json({
-                message: "Debe enviar al menos un campo"
-            });
-        }
-
-        const user = await getUserById(req.params.id);
-
-        if (!user) {
-            return res.status(404).json({
-                message: "Usuario no encontrado"
-            });
-        }
-
-        const data = {
-            name,
-            email
-        };
-
-        if (password !== undefined) {
-            data.password = await bcrypt.hash(password, 10);
-        }
-
-        await updateUser(req.params.id, data);
-
-        res.status(200).json({
-            message: "Usuario actualizado parcialmente"
-        });
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            message: "Error interno del servidor"
-        });
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
     }
+
+    if (Number(req.params.id) !== req.user.id) {
+      return res.status(403).json({
+        message: "No puede modificar otro usuario",
+      });
+    }
+
+    const { name, email, password } = req.body;
+
+    if (name === undefined && email === undefined && password === undefined) {
+      return res.status(400).json({
+        message: "Debe enviar al menos un campo",
+      });
+    }
+
+    const user = await getUserById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Usuario no encontrado",
+      });
+    }
+
+    const data = {
+      name,
+      email,
+    };
+
+    if (password !== undefined) {
+      data.password = await bcrypt.hash(password, 10);
+    }
+
+    await updateUser(req.params.id, data);
+
+    res.status(200).json({
+      message: "Usuario actualizado parcialmente",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
 };
 
 const deleteUserController = async (req, res) => {
-    try {
-        const user = await getUserById(req.params.id);
-
-        if (!user) {
-            return res.status(404).json({
-                message: "Usuario no encontrado"
-            });
-        }
-
-        await deleteUser(req.params.id);
-
-        res.status(204).send();
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            message: "Error interno del servidor"
-        });
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
     }
+
+    if (Number(req.params.id) !== req.user.id) {
+      return res.status(403).json({
+        message: "No puede eliminar otro usuario",
+      });
+    }
+
+    const user = await getUserById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Usuario no encontrado",
+      });
+    }
+
+    await deleteUser(req.params.id);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
 };
 
 module.exports = {
-    getUsers,
-    getUserById: getUserByIdController,
-    createUser: createUserController,
-    updateUser: updateUserController,
-    partialUpdateUser: partialUpdateUserController,
-    deleteUser: deleteUserController,
-    login
+  getUsers,
+  getUserById: getUserByIdController,
+  createUser: createUserController,
+  updateUser: updateUserController,
+  partialUpdateUser: partialUpdateUserController,
+  deleteUser: deleteUserController,
+  login,
 };

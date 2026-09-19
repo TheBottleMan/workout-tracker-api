@@ -20,7 +20,17 @@ const isValidExercise = (
     return true;
 };
 
+const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const isValidPassword = (password) => {
+    return typeof password === "string" && password.length >= 6;
+};
+
 module.exports = {
     isValidId,
-    isValidExercise
+    isValidExercise,
+    isValidEmail,
+    isValidPassword
 };

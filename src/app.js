@@ -10,6 +10,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 
+app.use((req, res, next) => {
+    res.set("X-API-Key", "WorkoutTracker");
+    next();
+});
+
 app.get("/", (req, res) => {
     res.status(200).json({
         message: "Workout Tracker API funcionando"
