@@ -1,5 +1,3 @@
-const { isValidId } = require("../utils/validation");
-
 const {
   getAllProgress,
   getProgressById,
@@ -10,7 +8,9 @@ const {
   getProgressReport,
 } = require("../models/progressModel");
 
-const getProgressController = async (req, res) => {
+const { isValidId } = require("../utils/validation");
+
+const getProgress = async (req, res) => {
   try {
     const limit = req.query.limit ? Number(req.query.limit) : null;
 
@@ -114,30 +114,6 @@ const createProgressController = async (req, res) => {
       message: "Error interno del servidor",
     });
   }
-};
-
-const updateProgress = (req, res) => {
-  res.status(501).json({
-    message: "Actualización de progreso pendiente",
-  });
-};
-
-const partialUpdateProgress = (req, res) => {
-  res.status(501).json({
-    message: "Actualización parcial pendiente",
-  });
-};
-
-const deleteProgress = (req, res) => {
-  res.status(501).json({
-    message: "Eliminación de progreso pendiente",
-  });
-};
-
-const getProgressReport = (req, res) => {
-  res.status(501).json({
-    message: "Informe de progreso pendiente",
-  });
 };
 
 const updateProgressController = async (req, res) => {
@@ -320,7 +296,7 @@ const getProgressReportController = async (req, res) => {
 };
 
 module.exports = {
-  getProgress: getProgressController,
+  getProgress,
   getProgressById: getProgressByIdController,
   createProgress: createProgressController,
   updateProgress: updateProgressController,

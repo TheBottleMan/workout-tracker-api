@@ -1,5 +1,3 @@
-const { getAllUsers, getUserById } = require("../models/userModel");
-
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -40,35 +38,6 @@ const getUsers = async (req, res) => {
       message: "Error interno del servidor",
     });
   }
-};
-
-const getAllUsers = async (limit, search) => {
-  let sql = `
-        SELECT id, name, email, created_at
-        FROM users
-    `;
-
-  const values = [];
-
-  if (search) {
-    sql += `
-            WHERE name LIKE ?
-            OR email LIKE ?
-        `;
-
-    values.push(`%${search}%`, `%${search}%`);
-  }
-
-  sql += " ORDER BY id ASC";
-
-  if (limit !== null) {
-    sql += " LIMIT ?";
-    values.push(limit);
-  }
-
-  const [rows] = await pool.query(sql, values);
-
-  return rows;
 };
 
 const getUserByIdController = async (req, res) => {
@@ -118,6 +87,15 @@ const createUserController = async (req, res) => {
         message: "La contraseña debe tener al menos 6 caracteres",
       });
     }
+
+    const existingUser = await getUserByEmail(email);
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "El email ya está registrado",
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const id = await createUser(name, email, hashedPassword);
@@ -139,24 +117,6 @@ const createUserController = async (req, res) => {
   }
 };
 
-const updateUser = (req, res) => {
-  res.status(501).json({
-    message: "Actualización de usuario pendiente de implementación",
-  });
-};
-
-const partialUpdateUser = (req, res) => {
-  res.status(501).json({
-    message: "Actualización parcial pendiente de implementación",
-  });
-};
-
-const deleteUser = (req, res) => {
-  res.status(501).json({
-    message: "Eliminación de usuario pendiente de implementación",
-  });
-};
-
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -168,16 +128,16 @@ const login = async (req, res) => {
     }
 
     if (!isValidEmail(email)) {
-    return res.status(400).json({
-        message: "Email inválido"
-    });
-}
+      return res.status(400).json({
+        message: "Email inválido",
+      });
+    }
 
-if (!isValidPassword(password)) {
-    return res.status(400).json({
-        message: "La contraseña debe tener al menos 6 caracteres"
-    });
-}
+    if (!isValidPassword(password)) {
+      return res.status(400).json({
+        message: "La contraseña debe tener al menos 6 caracteres",
+      });
+    }
 
     const user = await getUserByEmail(email);
 
@@ -241,6 +201,18 @@ const updateUserController = async (req, res) => {
       });
     }
 
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        message: "Email inválido",
+      });
+    }
+
+    if (!isValidPassword(password)) {
+      return res.status(400).json({
+        message: "La contraseña debe tener al menos 6 caracteres",
+      });
+    }
+
     const user = await getUserById(req.params.id);
 
     if (!user) {
@@ -299,12 +271,29 @@ const partialUpdateUserController = async (req, res) => {
       });
     }
 
-    const data = {
-      name,
-      email,
-    };
+    const data = {};
+
+    if (name !== undefined) {
+      data.name = name;
+    }
+
+    if (email !== undefined) {
+      if (!isValidEmail(email)) {
+        return res.status(400).json({
+          message: "Email inválido",
+        });
+      }
+
+      data.email = email;
+    }
 
     if (password !== undefined) {
+      if (!isValidPassword(password)) {
+        return res.status(400).json({
+          message: "La contraseña debe tener al menos 6 caracteres",
+        });
+      }
+
       data.password = await bcrypt.hash(password, 10);
     }
 
