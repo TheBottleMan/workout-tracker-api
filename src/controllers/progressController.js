@@ -128,12 +128,149 @@ const getProgressReport = (req, res) => {
   });
 };
 
+const updateProgressController = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
+    const { workout_id, progress_value, notes } = req.body;
+
+    if (
+      workout_id === undefined ||
+      progress_value === undefined ||
+      notes === undefined
+    ) {
+      return res.status(400).json({
+        message: "PUT requiere workout_id, progress_value y notes",
+      });
+    }
+
+    if (!isValidId(String(workout_id))) {
+      return res.status(400).json({
+        message: "workout_id inválido",
+      });
+    }
+
+    if (typeof progress_value !== "number" || progress_value < 0) {
+      return res.status(400).json({
+        message: "progress_value inválido",
+      });
+    }
+
+    const existing = await getProgressById(req.params.id, req.user.id);
+
+    if (!existing) {
+      return res.status(404).json({
+        message: "Registro de progreso no encontrado",
+      });
+    }
+
+    const belongsToUser = await workoutBelongsToUser(workout_id, req.user.id);
+
+    if (!belongsToUser) {
+      return res.status(404).json({
+        message: "Entrenamiento no encontrado",
+      });
+    }
+
+    await updateProgress(req.params.id, req.user.id, {
+      workout_id,
+      progress_value,
+      notes,
+    });
+
+    res.status(200).json({
+      message: "Progreso actualizado correctamente",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
+const partialUpdateProgressController = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
+    const existing = await getProgressById(req.params.id, req.user.id);
+
+    if (!existing) {
+      return res.status(404).json({
+        message: "Registro de progreso no encontrado",
+      });
+    }
+
+    const { workout_id, progress_value, notes } = req.body;
+
+    if (
+      workout_id === undefined &&
+      progress_value === undefined &&
+      notes === undefined
+    ) {
+      return res.status(400).json({
+        message: "Debe enviar al menos un campo",
+      });
+    }
+
+    if (workout_id !== undefined) {
+      if (!isValidId(String(workout_id))) {
+        return res.status(400).json({
+          message: "workout_id inválido",
+        });
+      }
+
+      const belongsToUser = await workoutBelongsToUser(workout_id, req.user.id);
+
+      if (!belongsToUser) {
+        return res.status(404).json({
+          message: "Entrenamiento no encontrado",
+        });
+      }
+    }
+
+    if (
+      progress_value !== undefined &&
+      (typeof progress_value !== "number" || progress_value < 0)
+    ) {
+      return res.status(400).json({
+        message: "progress_value inválido",
+      });
+    }
+
+    await updateProgress(req.params.id, req.user.id, {
+      workout_id,
+      progress_value,
+      notes,
+    });
+
+    res.status(200).json({
+      message: "Progreso actualizado parcialmente",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
 module.exports = {
   getProgress: getProgressController,
   getProgressById: getProgressByIdController,
   createProgress: createProgressController,
-  updateProgress,
-  partialUpdateProgress,
+  updateProgress: updateProgressController,
+  partialUpdateProgress: partialUpdateProgressController,
   deleteProgress,
   getProgressReport,
 };

@@ -71,9 +71,48 @@ const createProgress = async (userId, workoutId, progressValue, notes) => {
   return result.insertId;
 };
 
+const updateProgress = async (id, userId, data) => {
+  const fields = [];
+  const values = [];
+
+  if (data.workout_id !== undefined) {
+    fields.push("workout_id = ?");
+    values.push(data.workout_id);
+  }
+
+  if (data.progress_value !== undefined) {
+    fields.push("progress_value = ?");
+    values.push(data.progress_value);
+  }
+
+  if (data.notes !== undefined) {
+    fields.push("notes = ?");
+    values.push(data.notes);
+  }
+
+  if (fields.length === 0) {
+    return false;
+  }
+
+  values.push(id, userId);
+
+  const [result] = await pool.query(
+    `
+        UPDATE progress
+        SET ${fields.join(", ")}
+        WHERE id = ?
+          AND user_id = ?
+        `,
+    values,
+  );
+
+  return result.affectedRows > 0;
+};
+
 module.exports = {
   getAllProgress,
   getProgressById,
   workoutBelongsToUser,
   createProgress,
+  updateProgress
 };
