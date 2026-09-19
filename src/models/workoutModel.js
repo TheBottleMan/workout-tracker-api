@@ -156,9 +156,23 @@ const updateWorkout = async (id, userId, data) => {
   return result.affectedRows > 0;
 };
 
+const deleteWorkout = async (id, userId) => {
+  const [result] = await pool.query(
+    `
+        DELETE FROM workouts
+        WHERE id = ?
+          AND user_id = ?
+        `,
+    [id, userId],
+  );
+
+  return result.affectedRows > 0;
+};
+
 module.exports = {
   getAllWorkouts,
   getWorkoutById,
   createWorkout,
   updateWorkout,
+  deleteWorkout,
 };

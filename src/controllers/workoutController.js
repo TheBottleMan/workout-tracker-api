@@ -237,11 +237,39 @@ const partialUpdateWorkoutController = async (req, res) => {
   }
 };
 
+const deleteWorkoutController = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
+    const exists = await getWorkoutById(req.params.id, req.user.id);
+
+    if (!exists) {
+      return res.status(404).json({
+        message: "Entrenamiento no encontrado",
+      });
+    }
+
+    await deleteWorkout(req.params.id, req.user.id);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
 module.exports = {
   getWorkouts,
   getWorkoutById: getWorkoutByIdController,
   createWorkout: createWorkoutController,
   updateWorkout: updateWorkoutController,
   partialUpdateWorkout: partialUpdateWorkoutController,
-  deleteWorkout,
+  deleteWorkout: deleteWorkoutController
 };
