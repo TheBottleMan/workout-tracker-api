@@ -265,12 +265,40 @@ const partialUpdateProgressController = async (req, res) => {
   }
 };
 
+const deleteProgressController = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
+    const existing = await getProgressById(req.params.id, req.user.id);
+
+    if (!existing) {
+      return res.status(404).json({
+        message: "Registro de progreso no encontrado",
+      });
+    }
+
+    await deleteProgress(req.params.id, req.user.id);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
 module.exports = {
   getProgress: getProgressController,
   getProgressById: getProgressByIdController,
   createProgress: createProgressController,
   updateProgress: updateProgressController,
   partialUpdateProgress: partialUpdateProgressController,
-  deleteProgress,
+  deleteProgress: deleteProgressController,
   getProgressReport,
 };
