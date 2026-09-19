@@ -54,6 +54,29 @@ const getWorkoutById = async (id, userId) => {
   return rows[0];
 };
 
+const getWorkoutExercises = async (workoutId) => {
+  const [rows] = await pool.query(
+    `
+        SELECT
+            we.exercise_id,
+            e.name,
+            e.description,
+            e.category,
+            e.muscle_group,
+            we.repetitions,
+            we.sets,
+            we.weight
+        FROM workout_exercises we
+        INNER JOIN exercises e
+            ON e.id = we.exercise_id
+        WHERE we.workout_id = ?
+        `,
+    [workoutId],
+  );
+
+  return rows;
+};
+
 const createWorkout = async (userId, workoutData) => {
   const connection = await pool.getConnection();
 
@@ -95,6 +118,16 @@ const createWorkout = async (userId, workoutData) => {
           exercise.weight || 0,
         ],
       );
+    }
+
+    for (const exercise of exercises) {
+      const exists = await exerciseExists(exercise.exercise_id);
+
+      if (!exists) {
+        return res.status(400).json({
+          message: `El ejercicio ${exercise.exercise_id} no existe`,
+        });
+      }
     }
 
     await connection.commit();
@@ -169,10 +202,20 @@ const deleteWorkout = async (id, userId) => {
   return result.affectedRows > 0;
 };
 
+const exerciseExists = async (exerciseId) => {
+  const [rows] = await pool.query("SELECT id FROM exercises WHERE id = ?", [
+    exerciseId,
+  ]);
+
+  return rows.length > 0;
+};
+
 module.exports = {
   getAllWorkouts,
   getWorkoutById,
+  getWorkoutExercises,
   createWorkout,
   updateWorkout,
   deleteWorkout,
+  exerciseExists,
 };

@@ -48,6 +48,13 @@ const getWorkoutByIdController = async (req, res) => {
       });
     }
 
+    const workoutExercises = await getWorkoutExercises(req.params.id);
+
+    res.status(200).json({
+      ...workout,
+      exercises: workoutExercises,
+    });
+
     res.status(200).json(workout);
   } catch (error) {
     console.error(error);
@@ -95,6 +102,16 @@ const createWorkoutController = async (req, res) => {
     if (!Array.isArray(exercises) || exercises.length === 0) {
       return res.status(400).json({
         message: "Debe incluir al menos un ejercicio",
+      });
+    }
+
+    if (
+      scheduled_at !== undefined &&
+      scheduled_at !== null &&
+      !isValidDateTime(scheduled_at)
+    ) {
+      return res.status(400).json({
+        message: "Fecha de programación inválida",
       });
     }
 
@@ -151,6 +168,16 @@ const updateWorkoutController = async (req, res) => {
     if (!isValidId(req.params.id)) {
       return res.status(400).json({
         message: "El ID debe ser numérico",
+      });
+    }
+
+    if (
+      scheduled_at !== undefined &&
+      scheduled_at !== null &&
+      !isValidDateTime(scheduled_at)
+    ) {
+      return res.status(400).json({
+        message: "Fecha de programación inválida",
       });
     }
 
@@ -217,6 +244,16 @@ const partialUpdateWorkoutController = async (req, res) => {
       });
     }
 
+    if (
+      scheduled_at !== undefined &&
+      scheduled_at !== null &&
+      !isValidDateTime(scheduled_at)
+    ) {
+      return res.status(400).json({
+        message: "Fecha de programación inválida",
+      });
+    }
+
     await updateWorkout(req.params.id, req.user.id, {
       name,
       description,
@@ -265,11 +302,22 @@ const deleteWorkoutController = async (req, res) => {
   }
 };
 
+const isValidDateTime = (value) => {
+  if (!value) {
+    return false;
+  }
+
+  const date = new Date(value);
+
+  return !Number.isNaN(date.getTime());
+};
+
 module.exports = {
   getWorkouts,
   getWorkoutById: getWorkoutByIdController,
   createWorkout: createWorkoutController,
   updateWorkout: updateWorkoutController,
   partialUpdateWorkout: partialUpdateWorkoutController,
-  deleteWorkout: deleteWorkoutController
+  deleteWorkout: deleteWorkoutController,
+  isValidDateTime,
 };
