@@ -77,10 +77,21 @@ const updateUser = async (id, data) => {
   return result.affectedRows > 0;
 };
 
+const deleteUser = async (id) => {
+    const [result] = await pool.query(
+        `DELETE FROM users
+         WHERE id = ?`,
+        [id]
+    );
+
+    return result.affectedRows > 0;
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   getUserByEmail,
   updateUser,
+  deleteUser,
 };

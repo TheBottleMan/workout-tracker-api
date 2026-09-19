@@ -234,12 +234,34 @@ const partialUpdateUserController = async (req, res) => {
     }
 };
 
+const deleteUserController = async (req, res) => {
+    try {
+        const user = await getUserById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: "Usuario no encontrado"
+            });
+        }
+
+        await deleteUser(req.params.id);
+
+        res.status(204).send();
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Error interno del servidor"
+        });
+    }
+};
+
 module.exports = {
     getUsers,
     getUserById: getUserByIdController,
     createUser: createUserController,
     updateUser: updateUserController,
     partialUpdateUser: partialUpdateUserController,
-    deleteUser,
+    deleteUser: deleteUserController,
     login
 };
