@@ -13,14 +13,14 @@ app.use("/api/auth", authRoutes);
 app.use("/api/workouts", workoutRoutes);
 
 app.use((req, res, next) => {
-    res.set("X-API-Key", "WorkoutTracker");
-    next();
+  res.set("X-API-Key", "WorkoutTracker");
+  next();
 });
 
 app.get("/", (req, res) => {
-    res.status(200).json({
-        message: "Workout Tracker API funcionando"
-    });
+  res.status(200).json({
+    message: "Workout Tracker API funcionando",
+  });
 });
 
 app.use("/api/exercises", exerciseRoutes);
