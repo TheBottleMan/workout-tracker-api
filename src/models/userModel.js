@@ -42,9 +42,45 @@ const getUserByEmail = async (email) => {
   return rows[0];
 };
 
+const updateUser = async (id, data) => {
+  const fields = [];
+  const values = [];
+
+  if (data.name !== undefined) {
+    fields.push("name = ?");
+    values.push(data.name);
+  }
+
+  if (data.email !== undefined) {
+    fields.push("email = ?");
+    values.push(data.email);
+  }
+
+  if (data.password !== undefined) {
+    fields.push("password = ?");
+    values.push(data.password);
+  }
+
+  if (fields.length === 0) {
+    return false;
+  }
+
+  values.push(id);
+
+  const [result] = await pool.query(
+    `UPDATE users
+         SET ${fields.join(", ")}
+         WHERE id = ?`,
+    values,
+  );
+
+  return result.affectedRows > 0;
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   getUserByEmail,
+  updateUser,
 };

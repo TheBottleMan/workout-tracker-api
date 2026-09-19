@@ -151,12 +151,95 @@ const login = async (req, res) => {
   }
 };
 
+const updateUserController = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "PUT requiere name, email y password",
+      });
+    }
+
+    const user = await getUserById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Usuario no encontrado",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await updateUser(req.params.id, {
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    res.status(200).json({
+      message: "Usuario actualizado correctamente",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
+const partialUpdateUserController = async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        if (
+            name === undefined &&
+            email === undefined &&
+            password === undefined
+        ) {
+            return res.status(400).json({
+                message: "Debe enviar al menos un campo"
+            });
+        }
+
+        const user = await getUserById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: "Usuario no encontrado"
+            });
+        }
+
+        const data = {
+            name,
+            email
+        };
+
+        if (password !== undefined) {
+            data.password = await bcrypt.hash(password, 10);
+        }
+
+        await updateUser(req.params.id, data);
+
+        res.status(200).json({
+            message: "Usuario actualizado parcialmente"
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Error interno del servidor"
+        });
+    }
+};
+
 module.exports = {
     getUsers,
     getUserById: getUserByIdController,
     createUser: createUserController,
-    updateUser,
-    partialUpdateUser,
+    updateUser: updateUserController,
+    partialUpdateUser: partialUpdateUserController,
     deleteUser,
     login
 };
