@@ -108,8 +108,57 @@ const createWorkout = async (userId, workoutData) => {
   }
 };
 
+const updateWorkout = async (id, userId, data) => {
+  const fields = [];
+  const values = [];
+
+  if (data.name !== undefined) {
+    fields.push("name = ?");
+    values.push(data.name);
+  }
+
+  if (data.description !== undefined) {
+    fields.push("description = ?");
+    values.push(data.description);
+  }
+
+  if (data.comments !== undefined) {
+    fields.push("comments = ?");
+    values.push(data.comments);
+  }
+
+  if (data.scheduled_at !== undefined) {
+    fields.push("scheduled_at = ?");
+    values.push(data.scheduled_at);
+  }
+
+  if (data.status !== undefined) {
+    fields.push("status = ?");
+    values.push(data.status);
+  }
+
+  if (fields.length === 0) {
+    return false;
+  }
+
+  values.push(id, userId);
+
+  const [result] = await pool.query(
+    `
+        UPDATE workouts
+        SET ${fields.join(", ")}
+        WHERE id = ?
+          AND user_id = ?
+        `,
+    values,
+  );
+
+  return result.affectedRows > 0;
+};
+
 module.exports = {
   getAllWorkouts,
   getWorkoutById,
   createWorkout,
+  updateWorkout,
 };

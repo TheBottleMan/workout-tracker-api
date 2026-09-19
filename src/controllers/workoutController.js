@@ -82,11 +82,166 @@ const deleteWorkout = (req, res) => {
   });
 };
 
+const createWorkoutController = async (req, res) => {
+  try {
+    const { name, description, comments, scheduled_at, exercises } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        message: "El nombre es obligatorio",
+      });
+    }
+
+    if (!Array.isArray(exercises) || exercises.length === 0) {
+      return res.status(400).json({
+        message: "Debe incluir al menos un ejercicio",
+      });
+    }
+
+    for (const exercise of exercises) {
+      if (!exercise.exercise_id || !exercise.repetitions || !exercise.sets) {
+        return res.status(400).json({
+          message: "Cada ejercicio debe tener exercise_id, repetitions y sets",
+        });
+      }
+
+      if (exercise.repetitions <= 0 || exercise.sets <= 0) {
+        return res.status(400).json({
+          message: "Las repeticiones y series deben ser mayores que 0",
+        });
+      }
+    }
+
+    const workoutId = await createWorkout(req.user.id, {
+      name,
+      description,
+      comments,
+      scheduled_at,
+      exercises,
+    });
+
+    res.status(201).json({
+      message: "Entrenamiento creado correctamente",
+      id: workoutId,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
+const updateWorkoutController = async (req, res) => {
+  try {
+    const { name, description, comments, scheduled_at } = req.body;
+
+    if (
+      !name ||
+      description === undefined ||
+      comments === undefined ||
+      scheduled_at === undefined
+    ) {
+      return res.status(400).json({
+        message: "PUT requiere name, description, comments y scheduled_at",
+      });
+    }
+
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
+    const exists = await getWorkoutById(req.params.id, req.user.id);
+
+    if (!exists) {
+      return res.status(404).json({
+        message: "Entrenamiento no encontrado",
+      });
+    }
+
+    await updateWorkout(req.params.id, req.user.id, {
+      name,
+      description,
+      comments,
+      scheduled_at,
+    });
+
+    res.status(200).json({
+      message: "Entrenamiento actualizado correctamente",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
+const partialUpdateWorkoutController = async (req, res) => {
+  try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({
+        message: "El ID debe ser numérico",
+      });
+    }
+
+    const exists = await getWorkoutById(req.params.id, req.user.id);
+
+    if (!exists) {
+      return res.status(404).json({
+        message: "Entrenamiento no encontrado",
+      });
+    }
+
+    const { name, description, comments, scheduled_at, status } = req.body;
+
+    if (
+      name === undefined &&
+      description === undefined &&
+      comments === undefined &&
+      scheduled_at === undefined &&
+      status === undefined
+    ) {
+      return res.status(400).json({
+        message: "Debe enviar al menos un campo",
+      });
+    }
+
+    if (status !== undefined && !["pending", "completed"].includes(status)) {
+      return res.status(400).json({
+        message: "Estado inválido",
+      });
+    }
+
+    await updateWorkout(req.params.id, req.user.id, {
+      name,
+      description,
+      comments,
+      scheduled_at,
+      status,
+    });
+
+    res.status(200).json({
+      message: "Entrenamiento actualizado parcialmente",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
 module.exports = {
   getWorkouts,
   getWorkoutById: getWorkoutByIdController,
-  createWorkout,
-  updateWorkout,
-  partialUpdateWorkout,
+  createWorkout: createWorkoutController,
+  updateWorkout: updateWorkoutController,
+  partialUpdateWorkout: partialUpdateWorkoutController,
   deleteWorkout,
 };
