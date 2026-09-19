@@ -1,8 +1,7 @@
 const pool = require("../config/db");
 
-const getAllProgress = async (userId) => {
-  const [rows] = await pool.query(
-    `
+const getAllProgress = async (userId, limit, from, to) => {
+  let sql = `
         SELECT
             p.id,
             p.workout_id,
@@ -14,10 +13,28 @@ const getAllProgress = async (userId) => {
         LEFT JOIN workouts w
             ON w.id = p.workout_id
         WHERE p.user_id = ?
-        ORDER BY p.recorded_at DESC
-        `,
-    [userId],
-  );
+    `;
+
+  const values = [userId];
+
+  if (from) {
+    sql += " AND DATE(p.recorded_at) >= ?";
+    values.push(from);
+  }
+
+  if (to) {
+    sql += " AND DATE(p.recorded_at) <= ?";
+    values.push(to);
+  }
+
+  sql += " ORDER BY p.recorded_at DESC";
+
+  if (limit !== null) {
+    sql += " LIMIT ?";
+    values.push(limit);
+  }
+
+  const [rows] = await pool.query(sql, values);
 
   return rows;
 };
@@ -71,6 +88,57 @@ const createProgress = async (userId, workoutId, progressValue, notes) => {
   return result.insertId;
 };
 
+const getProgressReport = async (userId) => {
+  const [summary] = await pool.query(
+    `
+        SELECT
+            COUNT(DISTINCT w.id) AS total_workouts,
+            SUM(
+                CASE
+                    WHEN w.status = 'completed'
+                    THEN 1
+                    ELSE 0
+                END
+            ) AS completed_workouts,
+            COUNT(p.id) AS progress_records,
+            MAX(p.progress_value) AS highest_progress
+        FROM workouts w
+        LEFT JOIN progress p
+            ON p.workout_id = w.id
+           AND p.user_id = ?
+        WHERE w.user_id = ?
+        `,
+    [userId, userId],
+  );
+
+  const [pastWorkouts] = await pool.query(
+    `
+        SELECT
+            w.id,
+            w.name,
+            w.scheduled_at,
+            w.status,
+            p.progress_value,
+            p.notes,
+            p.recorded_at
+        FROM workouts w
+        LEFT JOIN progress p
+            ON p.workout_id = w.id
+           AND p.user_id = ?
+        WHERE w.user_id = ?
+          AND w.scheduled_at IS NOT NULL
+          AND w.scheduled_at < NOW()
+        ORDER BY w.scheduled_at DESC
+        `,
+    [userId, userId],
+  );
+
+  return {
+    summary: summary[0],
+    past_workouts: pastWorkouts,
+  };
+};
+
 const updateProgress = async (id, userId, data) => {
   const fields = [];
   const values = [];
@@ -110,16 +178,16 @@ const updateProgress = async (id, userId, data) => {
 };
 
 const deleteProgress = async (id, userId) => {
-    const [result] = await pool.query(
-        `
+  const [result] = await pool.query(
+    `
         DELETE FROM progress
         WHERE id = ?
           AND user_id = ?
         `,
-        [id, userId]
-    );
+    [id, userId],
+  );
 
-    return result.affectedRows > 0;
+  return result.affectedRows > 0;
 };
 
 module.exports = {
@@ -128,5 +196,6 @@ module.exports = {
   workoutBelongsToUser,
   createProgress,
   updateProgress,
-  deleteProgress
+  deleteProgress,
+  getProgressReport,
 };

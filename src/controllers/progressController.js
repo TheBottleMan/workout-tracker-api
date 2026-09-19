@@ -1,5 +1,3 @@
-const { getAllProgress, getProgressById } = require("../models/progressModel");
-
 const { isValidId } = require("../utils/validation");
 
 const {
@@ -7,11 +5,25 @@ const {
   getProgressById,
   workoutBelongsToUser,
   createProgress,
+  updateProgress,
+  deleteProgress,
+  getProgressReport,
 } = require("../models/progressModel");
 
 const getProgressController = async (req, res) => {
   try {
-    const progress = await getAllProgress(req.user.id);
+    const limit = req.query.limit ? Number(req.query.limit) : null;
+
+    const from = req.query.from || null;
+    const to = req.query.to || null;
+
+    if (limit !== null && (!Number.isInteger(limit) || limit <= 0)) {
+      return res.status(400).json({
+        message: "limit debe ser un entero positivo",
+      });
+    }
+
+    const progress = await getAllProgress(req.user.id, limit, from, to);
 
     res.status(200).json(progress);
   } catch (error) {
@@ -293,6 +305,20 @@ const deleteProgressController = async (req, res) => {
   }
 };
 
+const getProgressReportController = async (req, res) => {
+  try {
+    const report = await getProgressReport(req.user.id);
+
+    res.status(200).json(report);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
 module.exports = {
   getProgress: getProgressController,
   getProgressById: getProgressByIdController,
@@ -300,5 +326,5 @@ module.exports = {
   updateProgress: updateProgressController,
   partialUpdateProgress: partialUpdateProgressController,
   deleteProgress: deleteProgressController,
-  getProgressReport,
+  getProgressReport: getProgressReportController,
 };
