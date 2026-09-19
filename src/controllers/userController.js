@@ -34,10 +34,43 @@ const getUserByIdController = async (req, res) => {
   }
 };
 
-const createUser = (req, res) => {
-  res.status(501).json({
-    message: "Creación de usuario pendiente de implementación",
-  });
+const createUserController = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Nombre, email y contraseña son obligatorios",
+      });
+    }
+
+    const existingUser = await getUserByEmail(email);
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "El email ya está registrado",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const id = await createUser(name, email, hashedPassword);
+
+    res.status(201).json({
+      message: "Usuario creado correctamente",
+      user: {
+        id,
+        name,
+        email,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
 };
 
 const updateUser = (req, res) => {
@@ -58,11 +91,72 @@ const deleteUser = (req, res) => {
   });
 };
 
-module.exports = {
-  getUsers,
-  getUserById: getUserByIdController,
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const {
+  getAllUsers,
+  getUserById,
   createUser,
-  updateUser,
-  partialUpdateUser,
-  deleteUser,
+  getUserByEmail,
+} = require("../models/userModel");
+
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email y contraseña son obligatorios",
+      });
+    }
+
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Credenciales inválidas",
+      });
+    }
+
+    const passwordValid = await bcrypt.compare(password, user.password);
+
+    if (!passwordValid) {
+      return res.status(401).json({
+        message: "Credenciales inválidas",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "2h",
+      },
+    );
+
+    res.status(200).json({
+      message: "Inicio de sesión exitoso",
+      token,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
+module.exports = {
+    getUsers,
+    getUserById: getUserByIdController,
+    createUser: createUserController,
+    updateUser,
+    partialUpdateUser,
+    deleteUser,
+    login
 };
