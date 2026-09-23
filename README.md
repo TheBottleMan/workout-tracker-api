@@ -12,34 +12,34 @@ Workout Tracker es una API backend para una aplicación de seguimiento de entren
 
 El sistema permite:
 
-* Registrar usuarios.
-* Iniciar sesión mediante JWT.
-* Gestionar usuarios.
-* Gestionar ejercicios.
-* Crear planes de entrenamiento.
-* Asociar múltiples ejercicios a un entrenamiento.
-* Definir series, repeticiones y peso.
-* Agregar comentarios a los entrenamientos.
-* Programar entrenamientos para una fecha y hora.
-* Consultar entrenamientos pendientes o completados.
-* Registrar progreso.
-* Generar informes sobre entrenamientos pasados y progreso.
+- Registrar usuarios.
+- Iniciar sesión mediante JWT.
+- Gestionar usuarios.
+- Gestionar ejercicios.
+- Crear planes de entrenamiento.
+- Asociar múltiples ejercicios a un entrenamiento.
+- Definir series, repeticiones y peso.
+- Agregar comentarios a los entrenamientos.
+- Programar entrenamientos para una fecha y hora.
+- Consultar entrenamientos pendientes o completados.
+- Registrar progreso.
+- Generar informes sobre entrenamientos pasados y progreso.
 
 ---
 
 ## 2. Tecnologías utilizadas
 
-* **Node.js**
-* **Express**
-* **MySQL**
-* **mysql2**
-* **dotenv**
-* **bcryptjs**
-* **jsonwebtoken**
-* **Jest**
-* **Supertest**
-* **Swagger UI**
-* **OpenAPI**
+- **Node.js**
+- **Express**
+- **MySQL**
+- **mysql2**
+- **dotenv**
+- **bcryptjs**
+- **jsonwebtoken**
+- **Jest**
+- **Supertest**
+- **Swagger UI**
+- **OpenAPI**
 
 ---
 
@@ -47,10 +47,10 @@ El sistema permite:
 
 Antes de ejecutar el proyecto se necesita tener instalado:
 
-* Node.js
-* npm
-* MySQL
-* Git
+- Node.js
+- npm
+- MySQL
+- Git
 
 También se puede utilizar **XAMPP** para ejecutar el servidor MySQL localmente.
 
@@ -91,6 +91,7 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=workout_tracker
+DB_PORT=3306
 
 JWT_SECRET=workout_tracker_secret
 ```
@@ -104,6 +105,7 @@ JWT_SECRET=workout_tracker_secret
 | `DB_USER`     | Usuario de MySQL                           |
 | `DB_PASSWORD` | Contraseña del usuario de MySQL            |
 | `DB_NAME`     | Nombre de la base de datos                 |
+| `DB_PORT`     | Puerto de MySQL (por defecto 3306)         |
 | `JWT_SECRET`  | Clave utilizada para firmar los tokens JWT |
 
 El archivo `.env` no debe subirse al repositorio.
@@ -219,54 +221,17 @@ El proyecto incluye un sembrador de ejercicios ubicado en:
 seeds/exercises.sql
 ```
 
-Ejemplo:
+Contenido:
 
 ```sql
 INSERT INTO exercises
 (name, description, category, muscle_group)
 VALUES
-(
-    'Press de banca',
-    'Ejercicio de fuerza para pecho.',
-    'fuerza',
-    'pecho'
-),
-(
-    'Press militar',
-    'Ejercicio de fuerza para hombros.',
-    'fuerza',
-    'hombros'
-),
-(
-    'Sentadilla',
-    'Ejercicio compuesto para piernas.',
-    'fuerza',
-    'piernas'
-),
-(
-    'Peso muerto',
-    'Ejercicio compuesto para cadena posterior.',
-    'fuerza',
-    'espalda'
-),
-(
-    'Dominadas',
-    'Ejercicio para espalda y brazos.',
-    'fuerza',
-    'espalda'
-),
-(
-    'Correr',
-    'Ejercicio cardiovascular.',
-    'cardio',
-    'piernas'
-),
-(
-    'Estiramiento de piernas',
-    'Ejercicio de flexibilidad.',
-    'flexibilidad',
-    'piernas'
-);
+('Press de banca', 'Ejercicio para trabajar principalmente el pecho.', 'fuerza', 'pecho'),
+('Sentadilla', 'Ejercicio compuesto para trabajar las piernas.', 'fuerza', 'piernas'),
+('Dominadas', 'Ejercicio para desarrollar la espalda.', 'fuerza', 'espalda'),
+('Correr', 'Actividad cardiovascular de resistencia.', 'cardio', 'piernas'),
+('Estiramiento de piernas', 'Ejercicio para mejorar la flexibilidad.', 'flexibilidad', 'piernas');
 ```
 
 Para utilizarlo, ejecutar el contenido de `seeds/exercises.sql` sobre la base de datos `workout_tracker`.
@@ -360,15 +325,15 @@ npm test
 
 Las pruebas verifican, entre otros aspectos:
 
-* Validaciones.
-* Middleware de autenticación.
-* Respuestas básicas de la API.
-* Estados HTTP.
-* Cabeceras de respuesta.
+- Validaciones.
+- Middleware de autenticación.
+- Respuestas básicas de la API.
+- Estados HTTP.
+- Cabeceras de respuesta.
 
 ---
 
-# 11. Autenticación
+## 11. Autenticación
 
 La API utiliza **JSON Web Tokens (JWT)** para proteger los endpoints que requieren autenticación.
 
@@ -400,18 +365,16 @@ Los usuarios solamente pueden acceder a sus propios entrenamientos y registros d
 
 ---
 
-# 12. Endpoints
+## 12. Endpoints
 
-## 12.1 Autenticación
+### 12.1 Autenticación
 
 | Método | Endpoint             | Descripción       | Auth | Estado          |
 | ------ | -------------------- | ----------------- | ---- | --------------- |
 | POST   | `/api/auth/register` | Registrar usuario | No   | 201 / 400       |
 | POST   | `/api/auth/login`    | Iniciar sesión    | No   | 200 / 400 / 401 |
 
----
-
-## 12.2 Usuarios
+### 12.2 Usuarios
 
 | Método | Endpoint         | Descripción            | Auth | Estado                |
 | ------ | ---------------- | ---------------------- | ---- | --------------------- |
@@ -422,22 +385,18 @@ Los usuarios solamente pueden acceder a sus propios entrenamientos y registros d
 | PATCH  | `/api/users/:id` | Actualización parcial  | JWT  | 200 / 400 / 403 / 404 |
 | DELETE | `/api/users/:id` | Eliminar usuario       | JWT  | 204 / 400 / 403 / 404 |
 
----
+### 12.3 Ejercicios
 
-## 12.3 Ejercicios
+| Método | Endpoint             | Descripción           | Auth | Estado                |
+| ------ | -------------------- | --------------------- | ---- | --------------------- |
+| GET    | `/api/exercises`     | Listar ejercicios     | No   | 200                   |
+| GET    | `/api/exercises/:id` | Obtener ejercicio     | No   | 200 / 400 / 404       |
+| POST   | `/api/exercises`     | Crear ejercicio       | JWT  | 201 / 400 / 401       |
+| PUT    | `/api/exercises/:id` | Actualizar ejercicio  | JWT  | 200 / 400 / 401 / 404 |
+| PATCH  | `/api/exercises/:id` | Actualización parcial | JWT  | 200 / 400 / 401 / 404 |
+| DELETE | `/api/exercises/:id` | Eliminar ejercicio    | JWT  | 204 / 401 / 404       |
 
-| Método | Endpoint             | Descripción           | Auth | Estado          |
-| ------ | -------------------- | --------------------- | ---- | --------------- |
-| GET    | `/api/exercises`     | Listar ejercicios     | No   | 200             |
-| GET    | `/api/exercises/:id` | Obtener ejercicio     | No   | 200 / 404       |
-| POST   | `/api/exercises`     | Crear ejercicio       | No   | 201 / 400       |
-| PUT    | `/api/exercises/:id` | Actualizar ejercicio  | No   | 200 / 400 / 404 |
-| PATCH  | `/api/exercises/:id` | Actualización parcial | No   | 200 / 400 / 404 |
-| DELETE | `/api/exercises/:id` | Eliminar ejercicio    | No   | 204 / 404       |
-
----
-
-## 12.4 Entrenamientos
+### 12.4 Entrenamientos
 
 | Método | Endpoint            | Descripción            | Auth | Estado          |
 | ------ | ------------------- | ---------------------- | ---- | --------------- |
@@ -448,9 +407,7 @@ Los usuarios solamente pueden acceder a sus propios entrenamientos y registros d
 | PATCH  | `/api/workouts/:id` | Actualización parcial  | JWT  | 200 / 400 / 404 |
 | DELETE | `/api/workouts/:id` | Eliminar entrenamiento | JWT  | 204 / 400 / 404 |
 
----
-
-## 12.5 Progreso
+### 12.5 Progreso
 
 | Método | Endpoint               | Descripción                  | Auth | Estado          |
 | ------ | ---------------------- | ---------------------------- | ---- | --------------- |
@@ -464,11 +421,11 @@ Los usuarios solamente pueden acceder a sus propios entrenamientos y registros d
 
 ---
 
-# 13. Ejemplos de uso
+## 13. Ejemplos de uso
 
-## 13.1 Registrar usuario
+### 13.1 Registrar usuario
 
-### Request
+**Request**
 
 ```http
 POST /api/auth/register
@@ -477,22 +434,22 @@ Content-Type: application/json
 
 ```json
 {
-    "name": "Juan Pérez",
-    "email": "juan@gmail.com",
-    "password": "123456"
+  "name": "Juan Pérez",
+  "email": "juan@gmail.com",
+  "password": "123456"
 }
 ```
 
-### Response
+**Response**
 
 ```json
 {
-    "message": "Usuario creado correctamente",
-    "user": {
-        "id": 1,
-        "name": "Juan Pérez",
-        "email": "juan@gmail.com"
-    }
+  "message": "Usuario creado correctamente",
+  "user": {
+    "id": 1,
+    "name": "Juan Pérez",
+    "email": "juan@gmail.com"
+  }
 }
 ```
 
@@ -504,9 +461,9 @@ Estado:
 
 ---
 
-# 14. Iniciar sesión
+## 14. Iniciar sesión
 
-### Request
+**Request**
 
 ```http
 POST /api/auth/login
@@ -515,17 +472,17 @@ Content-Type: application/json
 
 ```json
 {
-    "email": "juan@gmail.com",
-    "password": "123456"
+  "email": "juan@gmail.com",
+  "password": "123456"
 }
 ```
 
-### Response
+**Response**
 
 ```json
 {
-    "message": "Inicio de sesión exitoso",
-    "token": "JWT_TOKEN"
+  "message": "Inicio de sesión exitoso",
+  "token": "JWT_TOKEN"
 }
 ```
 
@@ -537,29 +494,31 @@ Estado:
 
 ---
 
-# 15. Crear ejercicio
+## 15. Crear ejercicio
 
-### Request
+**Request**
 
 ```http
 POST /api/exercises
+Authorization: Bearer <TOKEN>
 Content-Type: application/json
 ```
 
 ```json
 {
-    "name": "Press militar",
-    "description": "Ejercicio para hombros",
-    "category": "fuerza",
-    "muscle_group": "hombros"
+  "name": "Press militar",
+  "description": "Ejercicio para hombros",
+  "category": "fuerza",
+  "muscle_group": "hombros"
 }
 ```
 
-### Response
+**Response**
 
 ```json
 {
-    "message": "Ejercicio creado correctamente"
+  "message": "Ejercicio creado correctamente",
+  "id": 6
 }
 ```
 
@@ -571,7 +530,7 @@ Estado:
 
 ---
 
-# 16. Consultar ejercicios
+## 16. Consultar ejercicios
 
 ### Listar todos
 
@@ -587,7 +546,7 @@ GET /api/exercises/1
 
 ---
 
-# 17. Query Strings
+## 17. Query Strings
 
 La API utiliza Query Strings para aplicar límites y filtros.
 
@@ -599,6 +558,16 @@ GET /api/users?limit=10
 
 ```http
 GET /api/users?search=juan
+```
+
+### Ejercicios
+
+```http
+GET /api/exercises?category=fuerza
+```
+
+```http
+GET /api/exercises?muscle_group=piernas
 ```
 
 ### Entrenamientos
@@ -627,11 +596,11 @@ GET /api/progress?from=2026-09-01&to=2026-09-30
 
 ---
 
-# 18. Crear entrenamiento
+## 18. Crear entrenamiento
 
 Los entrenamientos pueden estar compuestos por múltiples ejercicios.
 
-### Request
+**Request**
 
 ```http
 POST /api/workouts
@@ -641,33 +610,33 @@ Content-Type: application/json
 
 ```json
 {
-    "name": "Rutina de pecho",
-    "description": "Entrenamiento de fuerza",
-    "comments": "Primera sesión",
-    "scheduled_at": "2026-09-20 17:00:00",
-    "exercises": [
-        {
-            "exercise_id": 1,
-            "repetitions": 10,
-            "sets": 4,
-            "weight": 50
-        },
-        {
-            "exercise_id": 3,
-            "repetitions": 8,
-            "sets": 3,
-            "weight": 20
-        }
-    ]
+  "name": "Rutina de pecho",
+  "description": "Entrenamiento de fuerza",
+  "comments": "Primera sesión",
+  "scheduled_at": "2026-09-20 17:00:00",
+  "exercises": [
+    {
+      "exercise_id": 1,
+      "repetitions": 10,
+      "sets": 4,
+      "weight": 50
+    },
+    {
+      "exercise_id": 3,
+      "repetitions": 8,
+      "sets": 3,
+      "weight": 20
+    }
+  ]
 }
 ```
 
-### Response
+**Response**
 
 ```json
 {
-    "message": "Entrenamiento creado correctamente",
-    "id": 1
+  "message": "Entrenamiento creado correctamente",
+  "id": 1
 }
 ```
 
@@ -679,45 +648,45 @@ Estado:
 
 ---
 
-# 19. Consultar entrenamiento
+## 19. Consultar entrenamiento
 
-### Request
+**Request**
 
 ```http
 GET /api/workouts/1
 Authorization: Bearer <TOKEN>
 ```
 
-### Response
+**Response**
 
 ```json
 {
-    "id": 1,
-    "name": "Rutina de pecho",
-    "description": "Entrenamiento de fuerza",
-    "comments": "Primera sesión",
-    "scheduled_at": "2026-09-20 17:00:00",
-    "status": "pending",
-    "exercises": [
-        {
-            "exercise_id": 1,
-            "name": "Press de banca",
-            "description": "Ejercicio de fuerza para pecho.",
-            "category": "fuerza",
-            "muscle_group": "pecho",
-            "repetitions": 10,
-            "sets": 4,
-            "weight": 50
-        }
-    ]
+  "id": 1,
+  "name": "Rutina de pecho",
+  "description": "Entrenamiento de fuerza",
+  "comments": "Primera sesión",
+  "scheduled_at": "2026-09-20 17:00:00",
+  "status": "pending",
+  "exercises": [
+    {
+      "exercise_id": 1,
+      "name": "Press de banca",
+      "description": "Ejercicio de fuerza para pecho.",
+      "category": "fuerza",
+      "muscle_group": "pecho",
+      "repetitions": 10,
+      "sets": 4,
+      "weight": 50
+    }
+  ]
 }
 ```
 
 ---
 
-# 20. Actualizar entrenamiento
+## 20. Actualizar entrenamiento
 
-## PUT
+### PUT
 
 ```http
 PUT /api/workouts/1
@@ -727,14 +696,14 @@ Content-Type: application/json
 
 ```json
 {
-    "name": "Rutina de pecho actualizada",
-    "description": "Entrenamiento de fuerza actualizado",
-    "comments": "Nueva sesión",
-    "scheduled_at": "2026-09-21 17:00:00"
+  "name": "Rutina de pecho actualizada",
+  "description": "Entrenamiento de fuerza actualizado",
+  "comments": "Nueva sesión",
+  "scheduled_at": "2026-09-21 17:00:00"
 }
 ```
 
-## PATCH
+### PATCH
 
 ```http
 PATCH /api/workouts/1
@@ -744,22 +713,22 @@ Content-Type: application/json
 
 ```json
 {
-    "comments": "Se aumentó el peso"
+  "comments": "Se aumentó el peso"
 }
 ```
 
 ---
 
-# 21. Eliminar entrenamiento
+## 21. Eliminar entrenamiento
 
-### Request
+**Request**
 
 ```http
 DELETE /api/workouts/1
 Authorization: Bearer <TOKEN>
 ```
 
-### Response
+**Response**
 
 No contiene cuerpo de respuesta.
 
@@ -771,9 +740,9 @@ Estado:
 
 ---
 
-# 22. Registrar progreso
+## 22. Registrar progreso
 
-### Request
+**Request**
 
 ```http
 POST /api/progress
@@ -783,18 +752,18 @@ Content-Type: application/json
 
 ```json
 {
-    "workout_id": 1,
-    "progress_value": 55.5,
-    "notes": "Aumenté el peso en el ejercicio principal"
+  "workout_id": 1,
+  "progress_value": 55.5,
+  "notes": "Aumenté el peso en el ejercicio principal"
 }
 ```
 
-### Response
+**Response**
 
 ```json
 {
-    "message": "Registro de progreso creado correctamente",
-    "id": 1
+  "message": "Registro de progreso creado correctamente",
+  "id": 1
 }
 ```
 
@@ -806,61 +775,61 @@ Estado:
 
 ---
 
-# 23. Consultar progreso
+## 23. Consultar progreso
 
-### Request
+**Request**
 
 ```http
 GET /api/progress
 Authorization: Bearer <TOKEN>
 ```
 
-### Response
+**Response**
 
 ```json
 [
-    {
-        "id": 1,
-        "workout_id": 1,
-        "workout_name": "Rutina de pecho",
-        "progress_value": 55.5,
-        "notes": "Aumenté el peso",
-        "recorded_at": "2026-09-20T18:00:00.000Z"
-    }
+  {
+    "id": 1,
+    "workout_id": 1,
+    "workout_name": "Rutina de pecho",
+    "progress_value": 55.5,
+    "notes": "Aumenté el peso",
+    "recorded_at": "2026-09-20T18:00:00.000Z"
+  }
 ]
 ```
 
 ---
 
-# 24. Informe de progreso
+## 24. Informe de progreso
 
-### Request
+**Request**
 
 ```http
 GET /api/progress/report
 Authorization: Bearer <TOKEN>
 ```
 
-### Response
+**Response**
 
 ```json
 {
-    "summary": {
-        "total_workouts": 8,
-        "completed_workouts": 5,
-        "progress_records": 12,
-        "highest_progress": 80
-    },
-    "past_workouts": [
-        {
-            "id": 1,
-            "name": "Rutina de pecho",
-            "scheduled_at": "2026-09-15 17:00:00",
-            "status": "completed",
-            "progress_value": 70,
-            "notes": "Mejor rendimiento"
-        }
-    ]
+  "summary": {
+    "total_workouts": 8,
+    "completed_workouts": 5,
+    "progress_records": 12,
+    "highest_progress": 80
+  },
+  "past_workouts": [
+    {
+      "id": 1,
+      "name": "Rutina de pecho",
+      "scheduled_at": "2026-09-15 17:00:00",
+      "status": "completed",
+      "progress_value": 70,
+      "notes": "Mejor rendimiento"
+    }
+  ]
 }
 ```
 
@@ -868,7 +837,7 @@ Este endpoint permite consultar información de entrenamientos anteriores y regi
 
 ---
 
-# 25. Códigos de estado HTTP
+## 25. Códigos de estado HTTP
 
 La API utiliza los siguientes estados:
 
@@ -885,7 +854,7 @@ La API utiliza los siguientes estados:
 
 ---
 
-# 26. Cabeceras HTTP
+## 26. Cabeceras HTTP
 
 La API utiliza la cabecera:
 
@@ -907,7 +876,7 @@ X-API-Key: WorkoutTracker
 
 ---
 
-# 27. Documentación OpenAPI
+## 27. Documentación OpenAPI
 
 La API incluye documentación mediante OpenAPI y Swagger UI.
 
@@ -921,7 +890,7 @@ Desde allí se pueden consultar los endpoints documentados y sus operaciones.
 
 ---
 
-# 28. Arquitectura del proyecto
+## 28. Arquitectura del proyecto
 
 El proyecto separa las responsabilidades en diferentes capas:
 
@@ -961,7 +930,7 @@ Contiene la configuración de la base de datos y OpenAPI.
 
 ---
 
-# 29. Seguridad
+## 29. Seguridad
 
 Las contraseñas de los usuarios se almacenan utilizando hash mediante `bcryptjs`.
 
@@ -973,7 +942,7 @@ De esta manera, un usuario no puede gestionar los entrenamientos o registros per
 
 ---
 
-# 30. Estrategia de ramas Git
+## 30. Estrategia de ramas Git
 
 El repositorio utiliza las siguientes ramas:
 
@@ -1012,7 +981,7 @@ Desarrollo relacionado con registros de progreso.
 
 ---
 
-# 31. Secuencia de commits por recurso
+## 31. Secuencia de commits por recurso
 
 Cada rama de recurso sigue la estructura indicada para el proyecto:
 
@@ -1041,7 +1010,7 @@ Actualización del README
 
 ---
 
-# 32. Flujo de integración
+## 32. Flujo de integración
 
 Las funcionalidades se desarrollan en sus respectivas ramas:
 
@@ -1066,7 +1035,7 @@ main
 
 ---
 
-# 33. Comandos principales de Git
+## 33. Comandos principales de Git
 
 Ver el estado:
 
@@ -1124,7 +1093,7 @@ git pull origin nombre-rama
 
 ---
 
-# 34. Scripts disponibles
+## 34. Scripts disponibles
 
 ### Iniciar la API
 
@@ -1146,23 +1115,23 @@ npm test
 
 ---
 
-# 35. Estado del proyecto
+## 35. Estado del proyecto
 
 El proyecto contiene:
 
-* API RESTful desarrollada con Express.
-* Base de datos relacional MySQL.
-* CRUD de usuarios, ejercicios, entrenamientos y progreso.
-* Registro e inicio de sesión.
-* Autenticación JWT.
-* Validaciones de parámetros y datos.
-* Query Strings para filtros.
-* Manejo de estados HTTP.
-* Cabeceras HTTP.
-* Seeder de ejercicios.
-* Gestión de entrenamientos con múltiples ejercicios.
-* Registro de progreso.
-* Informes de entrenamientos pasados y progreso.
-* Pruebas automatizadas.
-* Documentación OpenAPI/Swagger.
-* Versionamiento mediante ramas y commits en Git.
+- API RESTful desarrollada con Express.
+- Base de datos relacional MySQL.
+- CRUD de usuarios, ejercicios, entrenamientos y progreso.
+- Registro e inicio de sesión.
+- Autenticación JWT.
+- Validaciones de parámetros y datos.
+- Query Strings para filtros.
+- Manejo de estados HTTP.
+- Cabeceras HTTP.
+- Seeder de ejercicios.
+- Gestión de entrenamientos con múltiples ejercicios.
+- Registro de progreso.
+- Informes de entrenamientos pasados y progreso.
+- Pruebas automatizadas.
+- Documentación OpenAPI/Swagger.
+- Versionamiento mediante ramas y commits en Git.

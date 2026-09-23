@@ -2,18 +2,12 @@ const pool = require("../config/db");
 
 const getAllWorkouts = async (userId, limit, status) => {
   let sql = `
-        SELECT
-            w.id,
-            w.name,
-            w.description,
-            w.comments,
-            w.scheduled_at,
-            w.status,
-            w.created_at
-        FROM workouts w
-        WHERE w.user_id = ?
-    `;
-
+    SELECT
+      w.id, w.name, w.description, w.comments,
+      w.scheduled_at, w.status, w.created_at
+    FROM workouts w
+    WHERE w.user_id = ?
+  `;
   const values = [userId];
 
   if (status) {
@@ -29,51 +23,29 @@ const getAllWorkouts = async (userId, limit, status) => {
   }
 
   const [rows] = await pool.query(sql, values);
-
   return rows;
 };
 
 const getWorkoutById = async (id, userId) => {
   const [rows] = await pool.query(
-    `
-        SELECT
-            w.id,
-            w.name,
-            w.description,
-            w.comments,
-            w.scheduled_at,
-            w.status,
-            w.created_at
-        FROM workouts w
-        WHERE w.id = ?
-          AND w.user_id = ?
-        `,
+    `SELECT w.id, w.name, w.description, w.comments,
+            w.scheduled_at, w.status, w.created_at
+     FROM workouts w
+     WHERE w.id = ? AND w.user_id = ?`,
     [id, userId],
   );
-
   return rows[0];
 };
 
 const getWorkoutExercises = async (workoutId) => {
   const [rows] = await pool.query(
-    `
-        SELECT
-            we.exercise_id,
-            e.name,
-            e.description,
-            e.category,
-            e.muscle_group,
-            we.repetitions,
-            we.sets,
-            we.weight
-        FROM workout_exercises we
-        INNER JOIN exercises e
-            ON e.id = we.exercise_id
-        WHERE we.workout_id = ?
-        `,
+    `SELECT we.exercise_id, e.name, e.description, e.category,
+            e.muscle_group, we.repetitions, we.sets, we.weight
+     FROM workout_exercises we
+     INNER JOIN exercises e ON e.id = we.exercise_id
+     WHERE we.workout_id = ?`,
     [workoutId],
   );
-
   return rows;
 };
 
@@ -86,12 +58,19 @@ const createWorkout = async (userId, workoutData) => {
     const { name, description, comments, scheduled_at, exercises } =
       workoutData;
 
+    for (const exercise of exercises) {
+      const [rows] = await connection.query(
+        "SELECT id FROM exercises WHERE id = ?",
+        [exercise.exercise_id],
+      );
+      if (rows.length === 0) {
+        throw new Error(`El ejercicio ${exercise.exercise_id} no existe`);
+      }
+    }
+
     const [workoutResult] = await connection.query(
-      `
-            INSERT INTO workouts
-            (user_id, name, description, comments, scheduled_at)
-            VALUES (?, ?, ?, ?, ?)
-            `,
+      `INSERT INTO workouts (user_id, name, description, comments, scheduled_at)
+       VALUES (?, ?, ?, ?, ?)`,
       [
         userId,
         name,
@@ -105,11 +84,8 @@ const createWorkout = async (userId, workoutData) => {
 
     for (const exercise of exercises) {
       await connection.query(
-        `
-                INSERT INTO workout_exercises
-                (workout_id, exercise_id, repetitions, sets, weight)
-                VALUES (?, ?, ?, ?, ?)
-                `,
+        `INSERT INTO workout_exercises (workout_id, exercise_id, repetitions, sets, weight)
+         VALUES (?, ?, ?, ?, ?)`,
         [
           workoutId,
           exercise.exercise_id,
@@ -120,18 +96,7 @@ const createWorkout = async (userId, workoutData) => {
       );
     }
 
-    for (const exercise of exercises) {
-      const exists = await exerciseExists(exercise.exercise_id);
-
-      if (!exists) {
-        return res.status(400).json({
-          message: `El ejercicio ${exercise.exercise_id} no existe`,
-        });
-      }
-    }
-
     await connection.commit();
-
     return workoutId;
   } catch (error) {
     await connection.rollback();
@@ -149,40 +114,30 @@ const updateWorkout = async (id, userId, data) => {
     fields.push("name = ?");
     values.push(data.name);
   }
-
   if (data.description !== undefined) {
     fields.push("description = ?");
     values.push(data.description);
   }
-
   if (data.comments !== undefined) {
     fields.push("comments = ?");
     values.push(data.comments);
   }
-
   if (data.scheduled_at !== undefined) {
     fields.push("scheduled_at = ?");
     values.push(data.scheduled_at);
   }
-
   if (data.status !== undefined) {
     fields.push("status = ?");
     values.push(data.status);
   }
 
-  if (fields.length === 0) {
-    return false;
-  }
+  if (fields.length === 0) return false;
 
   values.push(id, userId);
 
   const [result] = await pool.query(
-    `
-        UPDATE workouts
-        SET ${fields.join(", ")}
-        WHERE id = ?
-          AND user_id = ?
-        `,
+    `UPDATE workouts SET ${fields.join(", ")}
+     WHERE id = ? AND user_id = ?`,
     values,
   );
 
@@ -191,23 +146,10 @@ const updateWorkout = async (id, userId, data) => {
 
 const deleteWorkout = async (id, userId) => {
   const [result] = await pool.query(
-    `
-        DELETE FROM workouts
-        WHERE id = ?
-          AND user_id = ?
-        `,
+    `DELETE FROM workouts WHERE id = ? AND user_id = ?`,
     [id, userId],
   );
-
   return result.affectedRows > 0;
-};
-
-const exerciseExists = async (exerciseId) => {
-  const [rows] = await pool.query("SELECT id FROM exercises WHERE id = ?", [
-    exerciseId,
-  ]);
-
-  return rows.length > 0;
 };
 
 module.exports = {
@@ -217,5 +159,4 @@ module.exports = {
   createWorkout,
   updateWorkout,
   deleteWorkout,
-  exerciseExists,
 };

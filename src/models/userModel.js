@@ -1,12 +1,22 @@
 const pool = require("../config/db");
 
-const getAllUsers = async () => {
-  const [rows] = await pool.query(
-    `SELECT id, name, email, created_at
-         FROM users
-         ORDER BY id ASC`,
-  );
+const getAllUsers = async (limit = null, search = "") => {
+  let sql = `SELECT id, name, email, created_at FROM users`;
+  const values = [];
 
+  if (search) {
+    sql += " WHERE name LIKE ? OR email LIKE ?";
+    values.push(`%${search}%`, `%${search}%`);
+  }
+
+  sql += " ORDER BY id ASC";
+
+  if (limit !== null) {
+    sql += " LIMIT ?";
+    values.push(limit);
+  }
+
+  const [rows] = await pool.query(sql, values);
   return rows;
 };
 
@@ -78,13 +88,13 @@ const updateUser = async (id, data) => {
 };
 
 const deleteUser = async (id) => {
-    const [result] = await pool.query(
-        `DELETE FROM users
+  const [result] = await pool.query(
+    `DELETE FROM users
          WHERE id = ?`,
-        [id]
-    );
+    [id],
+  );
 
-    return result.affectedRows > 0;
+  return result.affectedRows > 0;
 };
 
 module.exports = {

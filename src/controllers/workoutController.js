@@ -1,92 +1,63 @@
-const { getAllWorkouts, getWorkoutById } = require("../models/workoutModel");
+const {
+  getAllWorkouts,
+  getWorkoutById,
+  getWorkoutExercises,
+  createWorkout,
+  updateWorkout,
+  deleteWorkout,
+} = require("../models/workoutModel");
 
 const { isValidId } = require("../utils/validation");
+
+const isValidDateTime = (value) => {
+  if (!value) return false;
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime());
+};
 
 const getWorkouts = async (req, res) => {
   try {
     const limit = req.query.limit ? Number(req.query.limit) : null;
-
     const status = req.query.status ? req.query.status.trim() : null;
 
     if (limit !== null && (!Number.isInteger(limit) || limit <= 0)) {
-      return res.status(400).json({
-        message: "limit debe ser un entero positivo",
-      });
+      return res
+        .status(400)
+        .json({ message: "limit debe ser un entero positivo" });
     }
 
     if (status !== null && !["pending", "completed"].includes(status)) {
-      return res.status(400).json({
-        message: "status debe ser pending o completed",
-      });
+      return res
+        .status(400)
+        .json({ message: "status debe ser pending o completed" });
     }
 
     const workouts = await getAllWorkouts(req.user.id, limit, status);
-
     res.status(200).json(workouts);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 const getWorkoutByIdController = async (req, res) => {
   try {
     if (!isValidId(req.params.id)) {
-      return res.status(400).json({
-        message: "El ID debe ser numérico",
-      });
+      return res.status(400).json({ message: "El ID debe ser numérico" });
     }
 
     const workout = await getWorkoutById(req.params.id, req.user.id);
-
     if (!workout) {
-      return res.status(404).json({
-        message: "Entrenamiento no encontrado",
-      });
+      return res.status(404).json({ message: "Entrenamiento no encontrado" });
     }
 
     const workoutExercises = await getWorkoutExercises(req.params.id);
 
-    res.status(200).json({
-      ...workout,
-      exercises: workoutExercises,
-    });
-
-    res.status(200).json(workout);
+    res.status(200).json({ ...workout, exercises: workoutExercises });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    res.status(500).json({ message: "Error interno del servidor" });
   }
-};
-
-const createWorkout = (req, res) => {
-  res.status(501).json({
-    message: "Creación de entrenamiento pendiente",
-  });
-};
-
-const updateWorkout = (req, res) => {
-  res.status(501).json({
-    message: "Actualización pendiente",
-  });
-};
-
-const partialUpdateWorkout = (req, res) => {
-  res.status(501).json({
-    message: "Actualización parcial pendiente",
-  });
-};
-
-const deleteWorkout = (req, res) => {
-  res.status(501).json({
-    message: "Eliminación pendiente",
-  });
 };
 
 const createWorkoutController = async (req, res) => {
@@ -94,15 +65,13 @@ const createWorkoutController = async (req, res) => {
     const { name, description, comments, scheduled_at, exercises } = req.body;
 
     if (!name) {
-      return res.status(400).json({
-        message: "El nombre es obligatorio",
-      });
+      return res.status(400).json({ message: "El nombre es obligatorio" });
     }
 
     if (!Array.isArray(exercises) || exercises.length === 0) {
-      return res.status(400).json({
-        message: "Debe incluir al menos un ejercicio",
-      });
+      return res
+        .status(400)
+        .json({ message: "Debe incluir al menos un ejercicio" });
     }
 
     if (
@@ -110,9 +79,9 @@ const createWorkoutController = async (req, res) => {
       scheduled_at !== null &&
       !isValidDateTime(scheduled_at)
     ) {
-      return res.status(400).json({
-        message: "Fecha de programación inválida",
-      });
+      return res
+        .status(400)
+        .json({ message: "Fecha de programación inválida" });
     }
 
     for (const exercise of exercises) {
@@ -121,7 +90,6 @@ const createWorkoutController = async (req, res) => {
           message: "Cada ejercicio debe tener exercise_id, repetitions y sets",
         });
       }
-
       if (exercise.repetitions <= 0 || exercise.sets <= 0) {
         return res.status(400).json({
           message: "Las repeticiones y series deben ser mayores que 0",
@@ -143,15 +111,20 @@ const createWorkoutController = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    // Si el error viene de un ejercicio inválido, responde 400
+    if (error.message && error.message.includes("no existe")) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 const updateWorkoutController = async (req, res) => {
   try {
+    if (!isValidId(req.params.id)) {
+      return res.status(400).json({ message: "El ID debe ser numérico" });
+    }
+
     const { name, description, comments, scheduled_at } = req.body;
 
     if (
@@ -165,28 +138,19 @@ const updateWorkoutController = async (req, res) => {
       });
     }
 
-    if (!isValidId(req.params.id)) {
-      return res.status(400).json({
-        message: "El ID debe ser numérico",
-      });
-    }
-
     if (
       scheduled_at !== undefined &&
       scheduled_at !== null &&
       !isValidDateTime(scheduled_at)
     ) {
-      return res.status(400).json({
-        message: "Fecha de programación inválida",
-      });
+      return res
+        .status(400)
+        .json({ message: "Fecha de programación inválida" });
     }
 
     const exists = await getWorkoutById(req.params.id, req.user.id);
-
     if (!exists) {
-      return res.status(404).json({
-        message: "Entrenamiento no encontrado",
-      });
+      return res.status(404).json({ message: "Entrenamiento no encontrado" });
     }
 
     await updateWorkout(req.params.id, req.user.id, {
@@ -196,32 +160,24 @@ const updateWorkoutController = async (req, res) => {
       scheduled_at,
     });
 
-    res.status(200).json({
-      message: "Entrenamiento actualizado correctamente",
-    });
+    res
+      .status(200)
+      .json({ message: "Entrenamiento actualizado correctamente" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 const partialUpdateWorkoutController = async (req, res) => {
   try {
     if (!isValidId(req.params.id)) {
-      return res.status(400).json({
-        message: "El ID debe ser numérico",
-      });
+      return res.status(400).json({ message: "El ID debe ser numérico" });
     }
 
     const exists = await getWorkoutById(req.params.id, req.user.id);
-
     if (!exists) {
-      return res.status(404).json({
-        message: "Entrenamiento no encontrado",
-      });
+      return res.status(404).json({ message: "Entrenamiento no encontrado" });
     }
 
     const { name, description, comments, scheduled_at, status } = req.body;
@@ -233,15 +189,11 @@ const partialUpdateWorkoutController = async (req, res) => {
       scheduled_at === undefined &&
       status === undefined
     ) {
-      return res.status(400).json({
-        message: "Debe enviar al menos un campo",
-      });
+      return res.status(400).json({ message: "Debe enviar al menos un campo" });
     }
 
     if (status !== undefined && !["pending", "completed"].includes(status)) {
-      return res.status(400).json({
-        message: "Estado inválido",
-      });
+      return res.status(400).json({ message: "Estado inválido" });
     }
 
     if (
@@ -249,9 +201,9 @@ const partialUpdateWorkoutController = async (req, res) => {
       scheduled_at !== null &&
       !isValidDateTime(scheduled_at)
     ) {
-      return res.status(400).json({
-        message: "Fecha de programación inválida",
-      });
+      return res
+        .status(400)
+        .json({ message: "Fecha de programación inválida" });
     }
 
     await updateWorkout(req.params.id, req.user.id, {
@@ -262,54 +214,30 @@ const partialUpdateWorkoutController = async (req, res) => {
       status,
     });
 
-    res.status(200).json({
-      message: "Entrenamiento actualizado parcialmente",
-    });
+    res.status(200).json({ message: "Entrenamiento actualizado parcialmente" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
 const deleteWorkoutController = async (req, res) => {
   try {
     if (!isValidId(req.params.id)) {
-      return res.status(400).json({
-        message: "El ID debe ser numérico",
-      });
+      return res.status(400).json({ message: "El ID debe ser numérico" });
     }
 
     const exists = await getWorkoutById(req.params.id, req.user.id);
-
     if (!exists) {
-      return res.status(404).json({
-        message: "Entrenamiento no encontrado",
-      });
+      return res.status(404).json({ message: "Entrenamiento no encontrado" });
     }
 
     await deleteWorkout(req.params.id, req.user.id);
-
     res.status(204).send();
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    res.status(500).json({ message: "Error interno del servidor" });
   }
-};
-
-const isValidDateTime = (value) => {
-  if (!value) {
-    return false;
-  }
-
-  const date = new Date(value);
-
-  return !Number.isNaN(date.getTime());
 };
 
 module.exports = {

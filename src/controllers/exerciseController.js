@@ -1,4 +1,11 @@
-const db = require("../config/db");
+const {
+  getAllExercises,
+  getExerciseById,
+  createExercise,
+  updateExercise,
+  partialUpdateExercise,
+  deleteExercise,
+} = require("../models/exerciseModel");
 
 const { isValidId, isValidExercise } = require("../utils/validation");
 
@@ -6,65 +13,37 @@ const getExercises = async (req, res) => {
   try {
     const { category, muscle_group } = req.query;
 
-    let query = "SELECT * FROM exercises";
-    const values = [];
-    const conditions = [];
-
-    if (category) {
-      conditions.push("category = ?");
-      values.push(category);
-    }
-
-    if (muscle_group) {
-      conditions.push("muscle_group = ?");
-      values.push(muscle_group);
-    }
-
-    if (conditions.length > 0) {
-      query += " WHERE " + conditions.join(" AND ");
-    }
-
-    const [rows] = await db.query(query, values);
-
-    res.status(200).json(rows);
+    const exercises = await getAllExercises({ category, muscle_group });
+    res.status(200).json(exercises);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error al obtener los ejercicios",
-    });
+    res.status(500).json({ message: "Error al obtener los ejercicios" });
   }
 };
 
-const getExerciseById = async (req, res) => {
+const getExerciseByIdController = async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!isValidId(id)) {
-      return res.status(400).json({
-        message: "El ID debe ser un número positivo",
-      });
+      return res
+        .status(400)
+        .json({ message: "El ID debe ser un número positivo" });
     }
 
-    const [rows] = await db.query("SELECT * FROM exercises WHERE id = ?", [id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({
-        message: "Ejercicio no encontrado",
-      });
+    const exercise = await getExerciseById(id);
+    if (!exercise) {
+      return res.status(404).json({ message: "Ejercicio no encontrado" });
     }
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(exercise);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error al obtener el ejercicio",
-    });
+    res.status(500).json({ message: "Error al obtener el ejercicio" });
   }
 };
 
-const createExercise = async (req, res) => {
+const createExerciseController = async (req, res) => {
   try {
     const { name, description, category, muscle_group } = req.body;
 
@@ -74,34 +53,31 @@ const createExercise = async (req, res) => {
       });
     }
 
-    const [result] = await db.query(
-      `INSERT INTO exercises
-            (name, description, category, muscle_group)
-            VALUES (?, ?, ?, ?)`,
-      [name, description, category, muscle_group],
-    );
+    const id = await createExercise({
+      name,
+      description,
+      category,
+      muscle_group,
+    });
 
     res.status(201).json({
       message: "Ejercicio creado correctamente",
-      id: result.insertId,
+      id,
     });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error al crear el ejercicio",
-    });
+    res.status(500).json({ message: "Error al crear el ejercicio" });
   }
 };
 
-const updateExercise = async (req, res) => {
+const updateExerciseController = async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!isValidId(id)) {
-      return res.status(400).json({
-        message: "El ID debe ser un número positivo",
-      });
+      return res
+        .status(400)
+        .json({ message: "El ID debe ser un número positivo" });
     }
 
     const { name, description, category, muscle_group } = req.body;
@@ -112,167 +88,117 @@ const updateExercise = async (req, res) => {
       });
     }
 
-    const [existingExercise] = await db.query(
-      "SELECT * FROM exercises WHERE id = ?",
-      [id],
-    );
-
-    if (existingExercise.length === 0) {
-      return res.status(404).json({
-        message: "Ejercicio no encontrado",
-      });
+    const existing = await getExerciseById(id);
+    if (!existing) {
+      return res.status(404).json({ message: "Ejercicio no encontrado" });
     }
 
-    await db.query(
-      `UPDATE exercises
-            SET name = ?,
-                description = ?,
-                category = ?,
-                muscle_group = ?
-            WHERE id = ?`,
-      [name, description, category, muscle_group, id],
-    );
+    await updateExercise(id, { name, description, category, muscle_group });
 
-    res.status(200).json({
-      message: "Ejercicio actualizado correctamente",
-    });
+    res.status(200).json({ message: "Ejercicio actualizado correctamente" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error al actualizar el ejercicio",
-    });
+    res.status(500).json({ message: "Error al actualizar el ejercicio" });
   }
 };
 
-const updateExercisePartial = async (req, res) => {
+const updateExercisePartialController = async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!isValidId(id)) {
-      return res.status(400).json({
-        message: "El ID debe ser un número positivo",
-      });
+      return res
+        .status(400)
+        .json({ message: "El ID debe ser un número positivo" });
     }
 
-    const fields = [];
-    const values = [];
+    const data = {};
 
     if (req.body.name !== undefined) {
       if (req.body.name.trim() === "") {
-        return res.status(400).json({
-          message: "El nombre no puede estar vacío",
-        });
+        return res
+          .status(400)
+          .json({ message: "El nombre no puede estar vacío" });
       }
-
-      fields.push("name = ?");
-      values.push(req.body.name);
+      data.name = req.body.name;
     }
 
     if (req.body.description !== undefined) {
       if (req.body.description.trim() === "") {
-        return res.status(400).json({
-          message: "La descripción no puede estar vacía",
-        });
+        return res
+          .status(400)
+          .json({ message: "La descripción no puede estar vacía" });
       }
-
-      fields.push("description = ?");
-      values.push(req.body.description);
+      data.description = req.body.description;
     }
 
     if (req.body.category !== undefined) {
       if (req.body.category.trim() === "") {
-        return res.status(400).json({
-          message: "La categoría no puede estar vacía",
-        });
+        return res
+          .status(400)
+          .json({ message: "La categoría no puede estar vacía" });
       }
-
-      fields.push("category = ?");
-      values.push(req.body.category);
+      data.category = req.body.category;
     }
 
     if (req.body.muscle_group !== undefined) {
       if (req.body.muscle_group.trim() === "") {
-        return res.status(400).json({
-          message: "El grupo muscular no puede estar vacío",
-        });
+        return res
+          .status(400)
+          .json({ message: "El grupo muscular no puede estar vacío" });
       }
-
-      fields.push("muscle_group = ?");
-      values.push(req.body.muscle_group);
+      data.muscle_group = req.body.muscle_group;
     }
 
-    if (fields.length === 0) {
-      return res.status(400).json({
-        message: "No se enviaron datos para actualizar",
-      });
+    if (Object.keys(data).length === 0) {
+      return res
+        .status(400)
+        .json({ message: "No se enviaron datos para actualizar" });
     }
 
-    const [existingExercise] = await db.query(
-      "SELECT * FROM exercises WHERE id = ?",
-      [id],
-    );
-
-    if (existingExercise.length === 0) {
-      return res.status(404).json({
-        message: "Ejercicio no encontrado",
-      });
+    const existing = await getExerciseById(id);
+    if (!existing) {
+      return res.status(404).json({ message: "Ejercicio no encontrado" });
     }
 
-    values.push(id);
+    await partialUpdateExercise(id, data);
 
-    await db.query(
-      `UPDATE exercises
-            SET ${fields.join(", ")}
-            WHERE id = ?`,
-      values,
-    );
-
-    res.status(200).json({
-      message: "Ejercicio actualizado parcialmente",
-    });
+    res.status(200).json({ message: "Ejercicio actualizado parcialmente" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error al actualizar parcialmente el ejercicio",
-    });
+    res
+      .status(500)
+      .json({ message: "Error al actualizar parcialmente el ejercicio" });
   }
 };
 
-const deleteExercise = async (req, res) => {
+const deleteExerciseController = async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!isValidId(id)) {
-      return res.status(400).json({
-        message: "El ID debe ser un número positivo",
-      });
+      return res
+        .status(400)
+        .json({ message: "El ID debe ser un número positivo" });
     }
 
-    const [result] = await db.query("DELETE FROM exercises WHERE id = ?", [id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        message: "Ejercicio no encontrado",
-      });
+    const deleted = await deleteExercise(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Ejercicio no encontrado" });
     }
 
     res.status(204).send();
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Error al eliminar el ejercicio",
-    });
+    res.status(500).json({ message: "Error al eliminar el ejercicio" });
   }
 };
 
 module.exports = {
   getExercises,
-  getExerciseById,
-  createExercise,
-  updateExercise,
-  updateExercisePartial,
-  deleteExercise,
+  getExerciseById: getExerciseByIdController,
+  createExercise: createExerciseController,
+  updateExercise: updateExerciseController,
+  updateExercisePartial: updateExercisePartialController,
+  deleteExercise: deleteExerciseController,
 };

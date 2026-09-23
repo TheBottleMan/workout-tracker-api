@@ -33,6 +33,11 @@ app.use("/api/workouts", workoutRoutes);
 app.use("/api/exercises", exerciseRoutes);
 app.use("/api/progress", progressRoutes);
 
+app.use((err, req, res, next) => {
+  console.error("Error no controlado:", err);
+  res.status(500).json({ message: "Error interno del servidor" });
+});
+
 app.use((req, res) => {
   res.status(404).json({
     message: "Ruta no encontrada",
